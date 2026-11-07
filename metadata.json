@@ -1,0 +1,6 @@
+{
+  "name": "TechnovisAze Learning Bot",
+  "description": "Production Android application & Jetpack Compose autonomous learning bot with Room DB, WakeLock foreground service, and Gemini AI game strategy synthesis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

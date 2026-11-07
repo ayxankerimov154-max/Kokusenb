@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with configuration preferences and synced gaming bot state",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "preferredIntervalMinutes": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "BotStrategy": {
+      "title": "Bot Strategy",
+      "description": "Cloud synchronized autonomous gaming strategy record synthesized by Gemini AI",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "gameName": { "type": "string", "maxLength": 64 },
+        "gameVersion": { "type": "string", "maxLength": 64 },
+        "strategyCategory": { "type": "string", "maxLength": 128 },
+        "insightContent": { "type": "string", "maxLength": 10000 },
+        "confidenceScore": { "type": "number" },
+        "cycleIteration": { "type": "integer" },
+        "executionDurationMs": { "type": "integer" },
+        "timestampLearned": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "gameName", "gameVersion", "strategyCategory", "insightContent"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile and personal configuration"
+    },
+    "/bot_strategies/{strategyId}": {
+      "schema": { "$ref": "#/entities/BotStrategy" },
+      "description": "Cloud shared and synchronized game strategies from autonomous learning loop"
+    }
+  }
+}

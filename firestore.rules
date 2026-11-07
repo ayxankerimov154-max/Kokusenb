@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.keys().hasOnly(['uid', 'email', 'displayName', 'preferredIntervalMinutes', 'createdAt']) &&
+             data.uid is string && data.uid.size() <= 128 &&
+             data.uid == request.auth.uid &&
+             data.email is string && data.email.size() <= 256;
+    }
+
+    // Bot Strategy Validation
+    function isValidBotStrategy(data) {
+      return data.keys().hasAll(['authorId', 'gameName', 'gameVersion', 'strategyCategory', 'insightContent']) &&
+             data.keys().hasOnly(['id', 'authorId', 'gameName', 'gameVersion', 'strategyCategory', 'insightContent', 'keyTakeaways', 'confidenceScore', 'cycleIteration', 'executionDurationMs', 'timestampLearned', 'createdAt']) &&
+             data.authorId is string && data.authorId.size() <= 128 &&
+             data.authorId == request.auth.uid &&
+             data.gameName is string && data.gameName.size() <= 64 &&
+             data.gameVersion is string && data.gameVersion.size() <= 64 &&
+             data.strategyCategory is string && data.strategyCategory.size() <= 128 &&
+             data.insightContent is string && data.insightContent.size() <= 10000;
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Blanket user queries forbidden
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) &&
+                       incoming().uid == existing().uid;
+      allow delete: if isOwner(userId);
+    }
+
+    // 2. Bot Strategies Collection (Cloud Sync for Room DB)
+    match /bot_strategies/{strategyId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(strategyId) && isValidBotStrategy(incoming());
+      allow update: if isSignedIn() && isValidId(strategyId) &&
+                       existing().authorId == request.auth.uid &&
+                       isValidBotStrategy(incoming()) &&
+                       incoming().authorId == existing().authorId;
+      allow delete: if isSignedIn() && isValidId(strategyId) && existing().authorId == request.auth.uid;
+    }
+
+  }
+}
